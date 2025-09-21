@@ -164,7 +164,15 @@ def adicionar():
             flash('Erro: Conta não selecionada.', 'danger')
             return redirect(url_for('index'))
             
-        gerenciador.adicionar_transacao(tipo, descricao, valor, categoria, user_id, conta_id)
+        gerenciador.adicionar_transacao(
+            tipo=tipo, 
+            descricao=descricao, 
+            valor=valor, 
+            categoria=categoria, 
+            user_id=user_id, 
+            conta_id=conta_id
+        )
+        flash('Transação adicionada com sucesso!', 'success')
         
     except Exception as e:
         print(f"Erro ao adicionar via web: {e}")

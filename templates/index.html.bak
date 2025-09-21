@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+{% block content %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid-dashboard">
+        <div class="card">
+            <h2>Saldos Atuais</h2>
+            {% for conta in contas %}
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0;">
+                    <span>{{ conta.nome }}</span>
+                    <span style="font-weight: 600;">R$ {{ "%.2f"|format(conta.saldo_atual) }}</span>
+                </div>
+            {% endfor %}
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; margin-top: 10px; border-top: 2px solid #333;">
+                <span style="font-weight: 700;">SALDO TOTAL</span>
+                <span style="font-weight: 700; font-size: 1.2rem;">R$ {{ "%.2f"|format(saldo_total) }}</span>
+            </div>
+        </div>
+        
+        <div class="card resumo">
+            <div class="resumo-item">
+                <h3>Receitas (Mês)</h3>
+                <p class="receita">R$ {{ "%.2f"|format(receitas) }}</p>
+            </div>
+            <div class="resumo-item">
+                <h3>Despesas (Mês)</h3>
+                <p class="despesa">R$ {{ "%.2f"|format(despesas|abs) }}</p>
+            </div>
+            <div class="resumo-item">
+                <h3>Balanço (Mês)</h3>
+                <p class="saldo">R$ {{ "%.2f"|format(saldo_periodo) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <form method="GET" action="{{ url_for('index') }}" class="form-filtro">
+           <div class="form-group">
+                <label for="mes">Mês:</label>
+                <select name="mes" id="mes" class="form-group" style="padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                    {% for num, nome in lista_meses %}
+                        <option value="{{ num }}" {% if num == mes_selecionado %}selected{% endif %}>
+                            {{ nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ano">Ano:</label>
+                <select name="ano" id="ano" class="form-group" style="padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                    {% for ano in lista_anos %}
+                        <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>
+                            {{ ano }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn">Filtrar</button>
+            </div>
+            <div class="form-group" style="text-align: right; white-space: nowrap;">
+                 <a href="{{ url_for('index') }}" style="font-size: 0.9em;">Limpar Filtro</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Gastos por Categoria (Mês)</h2>
+        <div id="container-grafico" style="position: relative; height: 280px; width: 100%;">
+            <canvas id="graficoCategorias"></canvas>
+        </div>
+        <p id="sem-dados-grafico" style="display:none; text-align:center; padding-top: 100px; color: #666;">
+            Sem dados de despesa para este período.
+        </p>
+    </div>
+
+    <form class="card" action="/adicionar" method="POST">
+        <h2>Adicionar Transação</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group" style="grid-column: 1 / -1; display: flex; gap: 15px; align-items: center;">
+                <label><input type="radio" name="tipo" value="receita" checked> Receita</label>
+                <label><input type="radio" name="tipo" value="despesa"> Despesa</label>
+            </div>
+            
+            <div class="form-group">
+                <label for="descricao">Descrição:</label>
+                <input type="text" id="descricao" name="descricao" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="conta_id">Conta:</label>
+                <select name="conta_id" id="conta_id" required class="form-group" style="width: 100%; padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                    <option value="">-- Selecione uma conta --</option>
+                    {% for conta in lista_contas_usuario %}
+                        <option value="{{ conta.id }}">{{ conta.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="valor">Valor (R$):</label>
+                <input type="text" id="valor" name="valor" placeholder="Ex: 50,75" required>
+            </div>
+
+            <div class="form-group">
+                <label for="categoria">Categoria:</label>
+                <input type="text" id="categoria" name="categoria" placeholder="Ex: Alimentação" required>
+            </div>
+
+            <button type="submit" class="btn" style="grid-column: 1 / -1;">Adicionar</button>
+        </div>
+    </form>
+
+    <div class="card">
+        <h2>Histórico de Transações (Mês)</h2>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Conta</th> <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th>Descrição</th>
+                        <th style="text-align: right;">Valor</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transacoes %}
+                    <tr>
+                        <td>{{ t.data }}</td>
+                        <td>{{ t.conta_nome }}</td> <td>{{ t.tipo }}</td>
+                        <td>{{ t.categoria }}</td>
+                        <td>{{ t.descricao }}</td>
+                        <td class="valor {{ t.tipo }}" style="text-align: right;">
+                            R$ {{ "%.2f"|format(t.valor) }}
+                        </td>
+                        <td style="white-space: nowrap;">
+                            <a href="{{ url_for('editar_transacao', transacao_id=t.id) }}" class="btn-acao btn-editar">Editar</a>
+                            <form action="{{ url_for('excluir_transacao', transacao_id=t.id) }}" method="POST" style="display: inline-block; margin-left: 5px;">
+                                <button type="submit" class="btn-acao btn-excluir" onclick="return confirm('Tem certeza?');">
+                                    Excluir
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const mes = Number('{{ mes_selecionado }}');
+    const ano = Number('{{ ano_selecionado }}');
+        fetch(`/api/dados_grafico?mes=${mes}&ano=${ano}`)
+            .then(response => response.json())
+            .then(dados => {
+                // ... (todo o código do gráfico continua igual) ...
+                const labels = dados.labels;
+                const data = dados.data;
+                if (data.length > 0) {
+                    const ctx = document.getElementById('graficoCategorias').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Gastos por Categoria',
+                                data: data,
+                                backgroundColor: [
+                                    '#dc3545','#007bff','#ffc107','#28a745','#17a2b8','#6c757d','#fd7e14','#6610f2'
+                                ],
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                } else {
+                    document.getElementById('container-grafico').style.display = 'none';
+                    document.getElementById('sem-dados-grafico').style.display = 'block';
+                }
+            })
+            .catch(error => console.error('Erro ao buscar dados do gráfico:', error));
+    });
+    </script>
+
+    </div>
+
+    <div class="card">
+        <form method="GET" action="{{ url_for('index') }}" class="form-filtro">
+            <div class="form-group">
+                <label for="mes">Mês:</label>
+                <select name="mes" id="mes" class="form-group" style="padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                    {% for num, nome in lista_meses %}
+                        <option value="{{ num }}" {% if num == mes_selecionado %}selected{% endif %}>{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ano">Ano:</label>
+                <select name="ano" id="ano" class="form-group" style="padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                    {% for ano in lista_anos %}
+                        <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>{{ ano }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn">Filtrar</button>
+            </div>
+            <div class="form-group" style="text-align: right; white-space: nowrap;">
+                 <a href="{{ url_for('index') }}" style="font-size: 0.9em;">Limpar Filtro</a>
+            </div>
+        </form>
+    </div>
+
+    <form class="card" action="/adicionar" method="POST">
+        <h2>Adicionar Transação</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group" style="grid-column: 1 / -1; display: flex; gap: 15px; align-items: center;">
+                <label><input type="radio" name="tipo" value="receita" checked> Receita</label>
+                <label><input type="radio" name="tipo" value="despesa"> Despesa</label>
+            </div>
+            
+            <div class="form-group">
+                <label for="descricao">Descrição:</label>
+                <input type="text" id="descricao" name="descricao" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="conta_id">Conta:</label>
+                <select name="conta_id" id="conta_id" required class="form-group" style="width: 100%; padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                    <option value="">-- Selecione uma conta --</option>
+                    {% for conta in lista_contas_usuario %}
+                        <option value="{{ conta.id }}">{{ conta.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="valor">Valor (R$):</label>
+                <input type="text" id="valor" name="valor" placeholder="Ex: 50,75" required>
+            </div>
+
+            <div class="form-group">
+                <label for="categoria">Categoria:</label>
+                <input type="text" id="categoria" name="categoria" placeholder="Ex: Alimentação" required>
+            </div>
+
+            <button type="submit" class="btn" style="grid-column: 1 / -1;">Adicionar</button>
+        </div>
+    </form>
+
+    <div class="card">
+        <h2>Gastos por Categoria (Mês)</h2>
+        <div id="container-grafico" style="position: relative; height: 280px; width: 100%;">
+            <canvas id="graficoCategorias"></canvas>
+        </div>
+        <p id="sem-dados-grafico" style="display:none; text-align:center; padding-top: 100px; color: #666;">
+            Sem dados de despesa para este período.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Histórico de Transações</h2>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Conta</th>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th>Descrição</th>
+                        <th style="text-align: right;">Valor</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transacoes %}
+                    <tr>
+                        <td>{{ t.data }}</td>
+                        <td>{{ t.conta_nome }}</td>
+                        <td>{{ t.tipo }}</td>
+                        <td>{{ t.categoria }}</td>
+                        <td>{{ t.descricao }}</td>
+                        <td class="valor {{ t.tipo }}" style="text-align: right;">
+                            R$ {{ "%.2f"|format(t.valor|abs) }}
+                        </td>
+                        <td style="white-space: nowrap;">
+                            <a href="{{ url_for('editar_transacao', transacao_id=t.id) }}" class="btn-acao btn-editar">Editar</a>
+                            <form action="{{ url_for('excluir_transacao', transacao_id=t.id) }}" method="POST" style="display: inline-block; margin-left: 5px;">
+                                <button type="submit" class="btn-acao btn-excluir" onclick="return confirm('Tem certeza?');">
+                                    Excluir
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mes = Number('{{ mes_selecionado }}');
+        const ano = Number('{{ ano_selecionado }}');
+        fetch(`/api/dados_grafico?mes=${mes}&ano=${ano}`)
+            .then(response => response.json())
+            .then(dados => {
+                const labels = dados.labels;
+                const data = dados.data;
+                if (data.length > 0) {
+                    const ctx = document.getElementById('graficoCategorias').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Gastos por Categoria',
+                                data: data,
+                                backgroundColor: [
+                                    '#dc3545','#007bff','#ffc107','#28a745','#17a2b8','#6c757d','#fd7e14','#6610f2'
+                                ],
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                } else {
+                    document.getElementById('container-grafico').style.display = 'none';
+                    document.getElementById('sem-dados-grafico').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados do gráfico:', error);
+                document.getElementById('container-grafico').style.display = 'none';
+                document.getElementById('sem-dados-grafico').style.display = 'block';
+                document.getElementById('sem-dados-grafico').innerText = 'Erro ao carregar gráfico.';
+            });
+    });
+    </script>
+{% endblock %}

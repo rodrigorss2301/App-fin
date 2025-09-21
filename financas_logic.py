@@ -306,42 +306,6 @@ class GerenciadorFinancas:
         self.cursor.execute(query, tuple(params))
         return self.cursor.fetchall()
 
-    def connect(self):
-        self.conn = sqlite3.connect(self.db_file)
-        self.cursor = self.conn.cursor()
-        self._criar_tabelas() # Mudamos para 'tabelas' (plural)
-
-    def close(self):
-        if self.conn:
-            self.conn.close()
-
-    def _criar_tabelas(self):
-        """Cria as tabelas usuarios e transacoes se não existirem."""
-        
-        # Tabela de Usuários
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT NOT NULL UNIQUE,
-                senha_hash TEXT NOT NULL
-            )
-        ''')
-        
-        # Tabela de Transações (AGORA COM user_id)
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS transacoes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                data TEXT NOT NULL,
-                tipo TEXT NOT NULL,
-                descricao TEXT NOT NULL,
-                valor REAL NOT NULL,
-                categoria TEXT NOT NULL,
-                user_id INTEGER NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES usuarios (id)
-            )
-        ''')
-        self.conn.commit()
-
     # --- Novos Métodos para Usuários ---
 
     def registrar_usuario(self, email, senha_plana):
@@ -417,16 +381,24 @@ class GerenciadorFinancas:
         return total_receitas, total_despesas, saldo
 
     def ler_transacoes(self, user_id, mes=None, ano=None):
-        """Lê transações, opcionalmente filtrando por mês e ano."""
-        query = "SELECT * FROM transacoes WHERE user_id = ?"
+        """Lê transações, agora juntando o nome da conta (JOIN)"""
+        query = '''
+            SELECT t.*, c.nome as conta_nome 
+            FROM transacoes t
+            JOIN contas c ON t.conta_id = c.id
+            WHERE t.user_id = ?
+        '''
         params = [user_id]
+        
         if mes:
-            query += " AND strftime('%m', data) = ?"
+            query += " AND strftime('%m', t.data) = ?"
             params.append(f"{mes:02d}")
         if ano:
-            query += " AND strftime('%Y', data) = ?"
+            query += " AND strftime('%Y', t.data) = ?"
             params.append(str(ano))
-        query += " ORDER BY data DESC"
+            
+        query += " ORDER BY t.data DESC"
+        
         self.cursor.execute(query, tuple(params))
         return self.cursor.fetchall()
 

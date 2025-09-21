@@ -40,6 +40,63 @@
             margin-bottom: 25px;
             box-shadow: var(--sombra-card);
         }
+        .grid-dashboard {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        .resumo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            text-align: center;
+        }
+        .resumo-item {
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .form-filtro {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .receita { color: var(--cor-receita); font-weight: bold; font-size: 1.2em; }
+        .despesa { color: var(--cor-despesa); font-weight: bold; font-size: 1.2em; }
+        .saldo { color: var(--cor-saldo); font-weight: bold; font-size: 1.2em; }
+        
+        /* Estilos para a tabela de transações */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--cor-borda);
+        }
+        th {
+            background: var(--cor-fundo);
+            font-weight: 600;
+        }
+        .btn-acao {
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-editar {
+            background: var(--cor-saldo);
+            color: white;
+        }
+        .btn-excluir {
+            background: var(--cor-despesa);
+            color: white;
+        }
         /* Estilos de Formulário (reutilizáveis) */
         .form-group {
             margin-bottom: 15px;
