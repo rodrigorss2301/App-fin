@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastro - Minhas Finanças{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 40px auto;">
+    <h2>Cadastro</h2>
+    <br>
+    
+    <form method="POST" action="{{ url_for('register') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.email.label }}
+            {{ form.email(class="form-control") }}
+            {% for error in form.email.errors %}
+                <span style="color: red; font-size: 0.8em;">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.senha.label }}
+            {{ form.senha(class="form-control") }}
+            {% for error in form.senha.errors %}
+                <span style="color: red; font-size: 0.8em;">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.confirmar_senha.label }}
+            {{ form.confirmar_senha(class="form-control") }}
+            {% for error in form.confirmar_senha.errors %}
+                <span style="color: red; font-size: 0.8em;">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn" style="width: 100%;">Cadastrar</button>
+        </div>
+    </form>
+    <p style="text-align: center; margin-top: 15px;">
+        Já tem uma conta? <a href="{{ url_for('login') }}">Faça login</a>
+    </p>
+</div>
+{% endblock %}

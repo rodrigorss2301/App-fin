@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Minhas Finanças{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --cor-fundo: #f4f7f6;
+            --cor-card: #ffffff;
+            --cor-texto: #333;
+            --cor-texto-secundaria: #666;
+            --cor-borda: #e0e0e0;
+            --cor-receita: #28a745;
+            --cor-despesa: #dc3545;
+            --cor-saldo: #007bff;
+            --cor-botao: #007bff;
+            --cor-botao-hover: #0056b3;
+            --cor-alerta-sucesso: #d4edda;
+            --cor-alerta-erro: #f8d7da;
+            --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 960px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        .card {
+            background-color: var(--cor-card);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--sombra-card);
+        }
+        /* Estilos de Formulário (reutilizáveis) */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--cor-borda);
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        .btn {
+            background-color: var(--cor-botao);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn:hover { background-color: var(--cor-botao-hover); }
+        
+        /* Mensagens Flash (Alertas) */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .alert-success { background-color: var(--cor-alerta-sucesso); color: #155724; }
+        .alert-danger { background-color: var(--cor-alerta-erro); color: #721c24; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; }
+
+        /* Barra de Navegação Simples */
+        nav {
+            background: var(--cor-card);
+            box-shadow: var(--sombra-card);
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto;
+        }
+        nav a {
+            text-decoration: none;
+            color: var(--cor-botao);
+            font-weight: 600;
+            padding: 5px 10px;
+        }
+        nav .logo {
+            font-size: 1.5rem;
+            color: var(--cor-texto);
+        }
+        /* --- Estilos dos Botões de Ação (Editar/Excluir) --- */
+        .btn-acao {
+            display: inline-block; /* Garante alinhamento e padding */
+            font-size: 0.85em;
+            padding: 4px 10px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 600;
+            border: none;         /* Remove a borda padrão do <button> */
+            cursor: pointer;      /* Garante o cursor de 'mão' */
+            font-family: inherit; /* Faz o <button> usar a fonte do site */
+            line-height: 1.5;     /* Alinhamento vertical do texto */
+        }
+        .btn-editar {
+            background-color: #ffc107; /* Amarelo */
+            color: #333;
+        }
+        .btn-excluir {
+            background-color: #dc3545; /* Vermelho */
+            color: white;
+        }
+        .btn-excluir:hover {
+            background-color: #c82333; /* Vermelho mais escuro */
+        }
+        .btn-editar:hover {
+            background-color: #e0a800; /* Amarelo mais escuro */
+        }
+
+        /* --- Estilos do Formulário de Filtro --- */
+        .form-filtro {
+            display: grid;
+            /* Define colunas adaptáveis: 2fr (Mês), 1.5fr (Ano), auto (Botão), auto (Link) */
+            grid-template-columns: 2fr 1.5fr auto auto;
+            align-items: flex-end;
+            gap: 20px;
+        }
+        @media (max-width: 600px) {
+            .form-filtro {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .form-filtro .form-group {
+                text-align: left !important;
+            }
+        }
+
+        /* --- Estilos do Dashboard (Resumo + Gráfico) --- */
+        .grid-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        @media (max-width: 600px) {
+            .grid-dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="logo">Minhas Finanças</a>
+            <div>
+                {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('contas') }}">Contas</a> <a href="{{ url_for('logout') }}">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}">Login</a>
+                    <a href="{{ url_for('register') }}">Cadastro</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

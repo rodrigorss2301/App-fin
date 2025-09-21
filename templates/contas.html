@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas Contas - Minhas Finanças{% endblock %}
+
+{% block content %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid-dashboard">
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>Minhas Contas</h2>
+            
+            {% if not contas %}
+                <p>Você ainda não tem nenhuma conta cadastrada.</p>
+            {% else %}
+                <table style="width: 100%; margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; background: #f4f7f6;">Conta</th>
+                            <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e0e0e0; background: #f4f7f6;">Saldo Atual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conta in contas %}
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">{{ conta.nome }}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; font-weight: 600;">
+                                R$ {{ "%.2f"|format(conta.saldo_atual) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+        
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>Adicionar Nova Conta</h2>
+            
+            <form method="POST" action="{{ url_for('contas') }}">
+                <div class="form-group">
+                    <label for="nome">Nome da Conta (ex: Carteira, Conta Itaú)</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tipo_conta">Tipo da Conta</label>
+                    <select name="tipo_conta" id="tipo_conta" class="form-group" style="width: 100%; padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                        <option value="carteira">Dinheiro (Carteira)</option>
+                        <option value="conta_corrente">Conta Corrente / Poupança</option>
+                        <option value="investimento">Investimento</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="saldo_inicial">Saldo Inicial (R$)</label>
+                    <input type="text" id="saldo_inicial" name="saldo_inicial" placeholder="0,00">
+                    <small>Se sua conta está com R$ 500 agora, insira 500. Se está negativa, insira -500.</small>
+                </div>
+                
+                <button type="submit" class="btn">Salvar Conta</button>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}
