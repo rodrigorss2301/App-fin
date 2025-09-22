@@ -86,13 +86,10 @@ class LoginForm(FlaskForm):
 def index():
     gerenciador = None
     try:
-        # ---- VERIFICAÇÃO DE CONTAS ----
-        # Se o usuário (carregado pelo load_user) não tiver contas, força ele a criar uma
         if not current_user.contas:
             flash('Bem-vindo! Por favor, crie sua primeira conta (ex: Carteira) para começar.', 'info')
             return redirect(url_for('contas'))
         
-        # --- Lógica Padrão (agora sabemos que há contas) ---
         hoje = datetime.now()
         mes_selecionado = request.args.get('mes', default=hoje.month, type=int)
         ano_selecionado = request.args.get('ano', default=hoje.year, type=int)
@@ -109,33 +106,31 @@ def index():
         
         user_id = current_user.id 
         
-        # Resumo de Movimentação (Receita/Despesa no período)
         receitas, despesas, saldo_periodo = gerenciador.calcular_resumo(user_id, mes_selecionado, ano_selecionado)
         
-        # NOVO: Saldos das Contas (Saldo Atual)
+        # --- LÓGICA DE SALDO SEPARADO ---
         contas_com_saldo = gerenciador.listar_contas_com_saldo(user_id)
-        saldo_total = sum(c['saldo_atual'] for c in contas_com_saldo) # Soma o saldo de todas as contas
+        contas_dinheiro = [c for c in contas_com_saldo if c['tipo_conta'] != 'cartao_de_credito']
+        contas_cartao = [c for c in contas_com_saldo if c['tipo_conta'] == 'cartao_de_credito']
+        saldo_total_dinheiro = sum(c['saldo_atual'] for c in contas_dinheiro)
+        total_faturas = sum(abs(c['saldo_atual']) for c in contas_cartao) 
         
-        # Histórico de Transações
         transacoes_tuplas = gerenciador.ler_transacoes(user_id, mes_selecionado, ano_selecionado)
-        trans_dicts = [dict(t) for t in transacoes_tuplas] # Converte as linhas (Rows) para dicts
+        trans_dicts = [dict(t) for t in transacoes_tuplas]
         
         return render_template('index.html', 
-                               # Resumo do Período
                                receitas=receitas,
                                despesas=despesas,
                                saldo_periodo=saldo_periodo,
-                               # Novos Saldos
-                               contas=contas_com_saldo,
-                               saldo_total=saldo_total,
-                               # Histórico
+                               contas_dinheiro=contas_dinheiro,
+                               contas_cartao=contas_cartao,
+                               saldo_total_dinheiro=saldo_total_dinheiro,
+                               total_faturas=total_faturas,
                                transacoes=trans_dicts,
-                               # Filtros
                                mes_selecionado=mes_selecionado,
                                ano_selecionado=ano_selecionado,
                                lista_meses=lista_meses,
                                lista_anos=lista_anos,
-                               # Lista de contas para o formulário (do objeto 'current_user')
                                lista_contas_usuario=current_user.contas)
     except Exception as e:
         print(f"Erro no index: {e}")
@@ -421,28 +416,42 @@ def contas():
         else:
             try:
                 saldo_inicial = float(saldo_inicial_str)
+                limite = None
+                data_fechamento = None
+                data_vencimento = None
+                
+                # Se for cartão, pega os dados extras
+                if tipo_conta == 'cartao_de_credito':
+                    saldo_inicial = 0 
+                    limite_str = request.form['limite'].replace(',', '.') or None
+                    if limite_str:
+                        limite = float(limite_str)
+                    data_fechamento = request.form['data_fechamento'] or None
+                    data_vencimento = request.form['data_vencimento'] or None
+                
                 gerenciador = GerenciadorFinancas()
                 gerenciador.connect()
-                gerenciador.criar_conta(current_user.id, nome, saldo_inicial, tipo_conta)
+                gerenciador.criar_conta(
+                    current_user.id, nome, saldo_inicial, tipo_conta, 
+                    limite, data_fechamento, data_vencimento
+                )
+                
                 flash('Conta criada com sucesso!', 'success')
-                # Recarrega o usuário (e suas contas) na sessão
-                load_user(current_user.id) 
-                return redirect(url_for('contas'))
+                load_user(current_user.id)
+                return redirect(url_for('index'))
                 
             except Exception as e:
                 print(e)
-                flash('Erro ao criar conta.', 'danger')
+                flash(f'Erro ao criar conta: {e}', 'danger')
             finally:
                 if gerenciador:
                     gerenciador.close()
     
-    # --- Lógica para MOSTRAR as contas (GET) ---
-    gerenciador = None
+    # --- Lógica GET (mostrar contas) ---
     contas_com_saldo = []
     try:
         gerenciador = GerenciadorFinancas()
         gerenciador.connect()
-        # Usamos a nova função que calcula o saldo atual de cada conta
         contas_com_saldo = gerenciador.listar_contas_com_saldo(current_user.id)
     except Exception as e:
         print(e)

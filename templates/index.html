@@ -9,30 +9,37 @@
     {% endwith %}
 
     <div class="grid-dashboard">
-        {% extends "base.html" %}
-        {% block content %}
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div class="grid-dashboard">
-                <div class="card">
-                    <h2>Saldos Atuais</h2>
-                    {% for conta in contas %}
-                        <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0;">
-                            <span>{{ conta.nome }}</span>
-                            <span style="font-weight: 600;">R$ {{ "%.2f"|format(conta.saldo_atual) }}</span>
-                        </div>
-                    {% endfor %}
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; margin-top: 10px; border-top: 2px solid #333;">
-                        <span style="font-weight: 700;">SALDO TOTAL</span>
-                        <span style="font-weight: 700; font-size: 1.2rem;">R$ {{ "%.2f"|format(saldo_total) }}</span>
-                    </div>
+        <div class="card">
+            <h2>Saldos Atuais</h2>
+            {% for conta in contas_dinheiro %}
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0;">
+                    <span>{{ conta.nome }}</span>
+                    <span style="font-weight: 600; color: {% if conta.saldo_atual < 0 %}var(--cor-despesa){% else %}var(--cor-texto){% endif %};">
+                        R$ {{ "%.2f"|format(conta.saldo_atual) }}
+                    </span>
                 </div>
+            {% endfor %}
+            {% for cartao in contas_cartao %}
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0;">
+                    <span>{{ cartao.nome }} (Fatura)</span>
+                    <span style="font-weight: 600;" class="despesa">
+                        R$ {{ "%.2f"|format(cartao.saldo_atual|abs) }}
+                    </span>
+                </div>
+            {% endfor %}
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; margin-top: 10px; border-top: 2px solid #333;">
+                <span style="font-weight: 700;">SALDO TOTAL (Dinheiro)</span>
+                <span style="font-weight: 700; font-size: 1.2rem; color: {% if saldo_total_dinheiro < 0 %}var(--cor-despesa){% else %}var(--cor-saldo){% endif %};">
+                    R$ {{ "%.2f"|format(saldo_total_dinheiro) }}
+                </span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 5px;">
+                <span style="font-weight: 500;">Total Faturas (Cartões)</span>
+                <span style="font-weight: 600; font-size: 1.1rem;" class="despesa">
+                    R$ {{ "%.2f"|format(total_faturas) }}
+                </span>
+            </div>
+        </div>
                 <div class="card resumo">
                     <div class="resumo-item">
                         <h3>Receitas (Mês)</h3>

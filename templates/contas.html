@@ -12,6 +12,9 @@
         {% endif %}
     {% endwith %}
 
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('index') }}" class="btn" style="background: var(--cor-saldo, #007bff); color: #fff;">Ir para Dashboard</a>
+    </div>
     <div class="grid-dashboard">
         <div class="card" style="grid-column: 1 / -1;">
             <h2>Minhas Contas</h2>
@@ -51,9 +54,10 @@
                 
                 <div class="form-group">
                     <label for="tipo_conta">Tipo da Conta</label>
-                    <select name="tipo_conta" id="tipo_conta" class="form-group" style="width: 100%; padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
+                    <select name="tipo_conta" id="tipo_conta_select" class="form-group" style="width: 100%; padding: 12px; border: 1px solid var(--cor-borda); border-radius: 5px;">
                         <option value="carteira">Dinheiro (Carteira)</option>
                         <option value="conta_corrente">Conta Corrente / Poupança</option>
+                        <option value="cartao_de_credito">Cartão de Crédito</option>
                         <option value="investimento">Investimento</option>
                         <option value="outro">Outro</option>
                     </select>
@@ -64,6 +68,24 @@
                     <input type="text" id="saldo_inicial" name="saldo_inicial" placeholder="0,00">
                     <small>Se sua conta está com R$ 500 agora, insira 500. Se está negativa, insira -500.</small>
                 </div>
+
+                <div id="campos-cartao" style="display: none;">
+                    <hr style="margin: 20px 0;">
+                    <div class="form-group">
+                        <label for="limite">Limite do Cartão (R$)</label>
+                        <input type="text" id="limite" name="limite" placeholder="5000,00">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="data_fechamento">Dia do Fechamento da Fatura</label>
+                            <input type="number" id="data_fechamento" name="data_fechamento" placeholder="Ex: 20 (para dia 20)">
+                        </div>
+                        <div class="form-group">
+                            <label for="data_vencimento">Dia do Vencimento da Fatura</label>
+                            <input type="number" id="data_vencimento" name="data_vencimento" placeholder="Ex: 28 (para dia 28)">
+                        </div>
+                    </div>
+                </div>
                 
                 <button type="submit" class="btn">Salvar Conta</button>
             </form>
@@ -71,3 +93,19 @@
     </div>
 
 {% endblock %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoContaSelect = document.getElementById('tipo_conta_select');
+        const camposCartao = document.getElementById('campos-cartao');
+        function toggleCamposCartao() {
+            if (tipoContaSelect.value === 'cartao_de_credito') {
+                camposCartao.style.display = 'block';
+            } else {
+                camposCartao.style.display = 'none';
+            }
+        }
+        toggleCamposCartao();
+        tipoContaSelect.addEventListener('change', toggleCamposCartao);
+    });
+</script>

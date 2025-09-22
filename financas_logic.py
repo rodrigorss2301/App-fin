@@ -122,11 +122,15 @@ class GerenciadorFinancas:
 
     # --- NOVOS Métodos para Contas ---
 
-    def criar_conta(self, user_id, nome, saldo_inicial, tipo_conta):
+    def criar_conta(self, user_id, nome, saldo_inicial, tipo_conta, limite=None, data_fechamento=None, data_vencimento=None):
         try:
             self.cursor.execute(
-                "INSERT INTO contas (user_id, nome, saldo_inicial, tipo_conta) VALUES (?, ?, ?, ?)",
-                (user_id, nome, saldo_inicial, tipo_conta)
+                """
+                INSERT INTO contas 
+                (user_id, nome, saldo_inicial, tipo_conta, limite, data_fechamento, data_vencimento) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (user_id, nome, saldo_inicial, tipo_conta, limite, data_fechamento, data_vencimento)
             )
             self.conn.commit()
             return True
