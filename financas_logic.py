@@ -51,6 +51,9 @@ class GerenciadorFinancas:
                     nome TEXT NOT NULL,
                     saldo_inicial REAL NOT NULL DEFAULT 0,
                     tipo_conta TEXT,
+                    limite REAL,
+                    data_fechamento TEXT,
+                    data_vencimento TEXT,
                     FOREIGN KEY (user_id) REFERENCES usuarios (id)
                 )
             ''')
@@ -162,7 +165,8 @@ class GerenciadorFinancas:
             contas_com_saldo.append({
                 'id': conta['id'],
                 'nome': conta['nome'],
-                'saldo_atual': saldo_atual
+                'saldo_atual': saldo_atual,
+                'tipo_conta': conta['tipo_conta']
             })
         return contas_com_saldo
 
